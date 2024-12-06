@@ -29,7 +29,7 @@ Settings.embed_model = OllamaEmbedding(
     model_name='mixtral:latest',
 )
 
-data = '/Users/jun/Downloads/64217-ai-agents-20240606/03-frameworks/docs'
+# data = '/Users/jun/Downloads/64217-ai-agents-20240606/03-frameworks/docs'
 data = '/Users/jun/Downloads/ai/al'
 
 client = qdrant_client.QdrantClient(
@@ -41,19 +41,18 @@ documents = SimpleDirectoryReader(data).load_data()
 
 LOGGER.info("load vector store")
 
-# index = VectorStoreIndex.from_documents(documents, storage_context=storage_context, show_progress=True)
-index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
+index = VectorStoreIndex.from_documents(documents, storage_context=storage_context, show_progress=True)
 agent = index.as_query_engine()
 
 # response = agent.query("花语秘境的员工有几种角色？")
 # print(response)
 #
 # print("====\n")
-#
-# response = agent.query("go common mistakes")
-# print(response)
-#
-# print("====\n")
+
+response = agent.query("write quick sort")
+print(response)
+
+print("====\n")
 
 LOGGER.info("start to query")
 start = time.time()
