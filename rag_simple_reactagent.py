@@ -26,7 +26,7 @@ console_handler.setFormatter(formatter)
 LOGGER.addHandler(console_handler)
 
 LOGGER.info("start")
-Settings.llm = Ollama(model="mixtral:latest", request_timeout=120.0)
+Settings.llm = Ollama(model="mixtral:latest", request_timeout=480.0)
 
 Settings.embed_model = OllamaEmbedding(
     base_url='http://127.0.0.1:11434',
@@ -38,6 +38,7 @@ client = qdrant_client.QdrantClient(
 )
 LOGGER.info("init vector store")
 vector_store = QdrantVectorStore(client=client, collection_name="rag")
+storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
 LOGGER.info("load vector store")
 
@@ -59,7 +60,7 @@ agent = ReActAgent.from_tools(query_agent_tools, llm=Settings.llm, verbose=True)
 #
 # print("====\n")
 
-response = agent.chat("write a skip list")
+response = agent.chat("write quick sort")
 print(response)
 
 print("====\n")
