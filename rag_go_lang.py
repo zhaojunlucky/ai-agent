@@ -47,7 +47,8 @@ Settings.embed_model = OllamaEmbedding(
 
 go_splitter = RecursiveCharacterTextSplitter.from_language(
     language=Language.GO,
-    chunk_size=1000,# chunk_overlap=0
+    chunk_size=1000,
+    chunk_overlap=200
 )
 
 data = '/Users/jun/magicworldz/github/golib'
@@ -84,7 +85,7 @@ def query_rag():
     # retrieval_qa_chat_prompt = hub.pull("langchain-ai/retrieval-qa-chat")
     # retrieval_qa_chat_prompt = hub.pull("rlm/rag-prompt")
     retrieval_qa_chat_prompt = ChatPromptTemplate.from_template("""
-        Answer the following question based only on the provided context. 
+        Answer the following golang question based only on the provided context. 
         Think step by step before providing a detailed answer. 
         <context>
         {context}
@@ -95,9 +96,9 @@ def query_rag():
     chain = create_retrieval_chain(db.as_retriever(), chain)
 
     query = 'get object as slice'
-    context = db.similarity_search(query)
+    context = db.similarity_search(query, k=3)
 
-    ctx_query = 'get object as slice'
+    ctx_query = f'get object with type any as slice'
 
     results = chain.invoke({'context': context, 'question': ctx_query, 'input': ctx_query})
 
@@ -105,5 +106,5 @@ def query_rag():
 
 
 if __name__ == '__main__':
-    # generate()
+    generate()
     query_rag()
