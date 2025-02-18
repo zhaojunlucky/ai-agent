@@ -1,12 +1,11 @@
 import logging
 import os
 
-from httpx import Timeout
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import OllamaEmbeddings, OllamaLLM
+from langchain_ollama import OllamaLLM
 from langchain_text_splitters import (
     Language,
     RecursiveCharacterTextSplitter,
@@ -14,7 +13,10 @@ from langchain_text_splitters import (
 from llama_index.core import Settings
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.llms.ollama import Ollama
-
+from langchain.embeddings.sentence_transformer import (
+    SentenceTransformerEmbeddings,
+)
+# from langchain_huggingface import HuggingFaceEmbeddings
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 
@@ -37,34 +39,32 @@ Settings.embed_model = OllamaEmbedding(
 )
 
 go_splitter = RecursiveCharacterTextSplitter.from_language(
-    language=Language.PYTHON,
-    chunk_size=500,
-    chunk_overlap=100
+    language=Language.GO,
+    chunk_size=1000,
+    chunk_overlap=200
 )
 
-data = '/Users/jun/magicworldz/github/scripts/'
+data = '/Users/jun/magicworldz/github/golib'
 
 LOGGER.info("load code")
 documents = []
 os.environ['HTTPX_TIMEOUT'] = '0'
-chroma_path = '/Users/jun/Downloads/64217-ai-agents-20240606/chroma_python_data'
-embed_func = OllamaEmbeddings(model="codellama:34b", client_kwargs={'timeout': Timeout(None, connect=5.0)})
+chroma_path = '/Users/jun/Downloads/64217-ai-agents-20240606/chroma_data_sentence_transformers'
+# embed_func = OllamaEmbeddings(model="codellama:34b", client_kwargs={'timeout': Timeout(None, connect=5.0)})
+embed_func = SentenceTransformerEmbeddings(model_name='all-MiniLM-L6-v2')
+
 
 def generate():
-    db = Chroma.from_texts(['python'], embed_func,
+    db = Chroma.from_texts(['golang'], embed_func,
                                persist_directory=chroma_path)
+
     for root, dirs, files in os.walk(data):
         for file in files:
-            if file.endswith('.py') and not file.endswith('__init__.py'):
+            if file.endswith('.go') and not file.endswith('_test.go'):
                 path = os.path.join(root, file)
-                if '/venv/' in path: continue
                 LOGGER.info(path)
                 with open(path, 'r', encoding='utf-8') as f:
-                    file_data = f.read()
-                    if not  file_data:
-                        LOGGER.warning(f"{path} is empty")
-                        continue
-                    go_docs = go_splitter.create_documents([file_data], metadatas=[{"source": path}])
+                    go_docs = go_splitter.create_documents([f.read()], metadatas=[{"source": path}])
                     # documents.extend(go_docs)
                     try:
                         db.add_documents(go_docs)
@@ -81,7 +81,7 @@ def query_rag():
     # retrieval_qa_chat_prompt = hub.pull("langchain-ai/retrieval-qa-chat")
     # retrieval_qa_chat_prompt = hub.pull("rlm/rag-prompt")
     retrieval_qa_chat_prompt = ChatPromptTemplate.from_template("""
-        Answer the following python question based only on the provided context. 
+        Answer the following golang question based only on the provided context. 
         Think step by step before providing a detailed answer. 
         <context>
         {context}
@@ -91,10 +91,10 @@ def query_rag():
     chain = create_stuff_documents_chain(OllamaLLM(model="codellama:34b"), retrieval_qa_chat_prompt)
     chain = create_retrieval_chain(db.as_retriever(), chain)
 
-    query = 'create a Nas file system object with name and size'
+    query = 'get object as slice'
     context = db.similarity_search(query, k=3)
 
-    ctx_query = f'create a Nas file system object with name and size'
+    ctx_query = f'get object with type any as slice'
 
     results = chain.invoke({'context': context, 'question': ctx_query, 'input': ctx_query})
 
@@ -102,5 +102,5 @@ def query_rag():
 
 
 if __name__ == '__main__':
-    # generate()
+    generate()
     query_rag()
